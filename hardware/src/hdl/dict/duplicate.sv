@@ -18,9 +18,13 @@ module Duplicate #(
 duplicate_i #(NUM_ELEMENTS)         curr_mask();
 ndata_i     #(data_t, NUM_ELEMENTS) data(clk, rst_n), n_data(clk, rst_n);
 
+// Distributed RAM: the mask read data drives the duplicate crossbar's data registers directly, and a
+// RAMB clock-to-out plus the route to them was the decoder proxy's typed_dictionary limit (+0.072 ns,
+// 1 level, rd-proxy/hse_r4_rd1-02). MehdiFIFO's behaviour does not depend on STYLE.
 MehdiFIFO #(
     .DEPTH(MAX_IN_TRANSIT),
-    .WIDTH($bits(curr_mask.duplicates) + $bits(curr_mask.origins))
+    .WIDTH($bits(curr_mask.duplicates) + $bits(curr_mask.origins)),
+    .STYLE("distributed")
 ) inst_mask_fifo (
     .i_clk(clk),
     .i_rst_n(rst_n),

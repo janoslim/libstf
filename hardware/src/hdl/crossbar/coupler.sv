@@ -34,9 +34,12 @@ logic                     data_beat_complete;
 ready_valid_i #(mask_t)               curr_mask(clk, rst_n);
 ndata_i       #(data_t, NUM_ELEMENTS) internal(clk, rst_n);
 
+// Distributed RAM: a RAMB read here fed the reorder RAM address in the hse_r1 proxy's worst
+// typed_dictionary path (+0.067 ns, rd-proxy/hse_r1-01); MehdiFIFO's behaviour does not depend on STYLE.
 MehdiFIFO #(
     .DEPTH(MAX_IN_TRANSIT),
-    .WIDTH(NUM_ELEMENTS + 1)
+    .WIDTH(NUM_ELEMENTS + 1),
+    .STYLE("distributed")
 ) inst_mask_fifo (
     .i_clk(clk),
     .i_rst_n(rst_n),
