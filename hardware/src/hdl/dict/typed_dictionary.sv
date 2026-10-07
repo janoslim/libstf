@@ -155,6 +155,22 @@ always_comb begin
     endcase
 end
 
+// rd9 (decoder-timing-fix findings.md section 13). A libstf skid buffer between the id selection above and
+// the Dictionary. Without it the Dictionary's in_ids.ready (Creditor: credit check and out.ready of the
+// deduplicate/decoupler front, from the pre-crossbar skid buffers' valid flops) reached this module's
+// 64-bit state CE and its own in_ids.ready in one cycle (rd7 proxy: 8 levels, +0.258 ns,
+// rd-analysis/v09-hse_r4_rd7-01 td_state; the v09 link's typed_dictionary state CE failed at -0.027 ns). The
+// skid registers both directions, keeps order and passes one beat per cycle: the Dictionary sees the same
+// id beats, later by one cycle, and the state update still follows the handshake on dictionary_in_ids.
+ndata_i #(id_t, NUM_ELEMENTS) dictionary_in_ids_slice(clk, rst_n);
+NDataSkidBuffer #(id_t, NUM_ELEMENTS) inst_ids_slice (
+    .clk(clk),
+    .rst_n(rst_n),
+
+    .in(dictionary_in_ids),
+    .out(dictionary_in_ids_slice)
+);
+
 Dictionary #(
     .value_t(data32_t),
     .id_t(id_t),
@@ -165,7 +181,7 @@ Dictionary #(
     .rst_n(rst_n),
 
     .in_values(dictionary_in_values),
-    .in_ids(dictionary_in_ids),
+    .in_ids(dictionary_in_ids_slice),
 
     .out(dictionary_out)
 );

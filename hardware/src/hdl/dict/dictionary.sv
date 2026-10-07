@@ -243,6 +243,21 @@ Coupler #(
     .out(coupler_out)
 );
 
+// rd9 (decoder-timing-fix findings.md section 13). A libstf skid buffer between the Coupler and Duplicate.
+// Without it the reorder outputs' valid flops went through the Coupler's lane AND into Duplicate's
+// in.valid, its mask FIFO's pop and the FIFO's output register in one cycle (rd7 proxy typed_dictionary
+// family: 8 levels, +0.250 ns, rd-proxy/hse_r4_rd7-01). The skid keeps order and passes one beat per
+// cycle. It sits inside the credited section, so the Creditor's 64 credits still bound the beats in
+// flight; the two extra entries only add storage.
+ndata_i #(value_t, NUM_ELEMENTS) coupler_out_slice(clk, rst_n);
+NDataSkidBuffer #(value_t, NUM_ELEMENTS) inst_coupler_slice (
+    .clk(clk),
+    .rst_n(reset_synced),
+
+    .in(coupler_out),
+    .out(coupler_out_slice)
+);
+
 Duplicate #(
     .data_t(value_t),
     .NUM_ELEMENTS(NUM_ELEMENTS),
@@ -253,7 +268,7 @@ Duplicate #(
 
     .mask(deduplicate_mask),
 
-    .in(coupler_out),
+    .in(coupler_out_slice),
     .out(out)
 );
 
